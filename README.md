@@ -1,3 +1,19 @@
+# PDS — protoimsg fork
+
+> **This is an unofficial fork.** The upstream repository is [bluesky-social/pds](https://github.com/bluesky-social/pds). This fork is maintained by the [protoimsg](https://protoimsg.app) project and is not affiliated with or endorsed by Bluesky.
+
+## What changed in this fork
+
+- **Custom `@atproto/pds` build** — The Dockerfile clones our [atproto fork](https://github.com/grishaLR/atproto), builds the PDS package from source, and installs it as a tarball. This pulls in rebranded emails, Prometheus metrics, and SQLite tuning from the atproto fork.
+- **Litestream backup** — Continuous WAL replication of the three core SQLite databases (`account.sqlite`, `sequencer.sqlite`, `did_cache.sqlite`) to Cloudflare R2.- **Per-actor backup** — A cron script (`actor-backup.sh`) runs every 6 hours, backing up all per-actor `store.db` files to a local tar archive (last 2 kept).
+- **GitHub Actions CI** — Builds and pushes the Docker image to `ghcr.io/grishalr/pds` on push to `main`.
+
+---
+
+*Everything below is from the original upstream README.*
+
+---
+
 # PDS
 
 Welcome to the repository for the official Bluesky PDS (Personal Data Server). This repository includes container images and documentation designed to assist technical people with hosting a Bluesky PDS.
