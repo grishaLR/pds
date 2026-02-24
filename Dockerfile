@@ -6,7 +6,7 @@ RUN apk add --no-cache git python3 make g++
 
 WORKDIR /atproto
 # Clone the fork — use ARG so CI can override the branch
-ARG ATPROTO_BRANCH=protoimsg/custom-pds
+ARG ATPROTO_BRANCH=main
 RUN git clone --depth 1 --branch ${ATPROTO_BRANCH} https://github.com/grishaLR/atproto.git .
 RUN corepack prepare --activate
 RUN pnpm install --no-frozen-lockfile
