@@ -9,7 +9,7 @@ WORKDIR /atproto
 ARG ATPROTO_BRANCH=protoimsg/custom-pds
 RUN git clone --depth 1 --branch ${ATPROTO_BRANCH} https://github.com/grishaLR/atproto.git .
 RUN corepack prepare --activate
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 RUN pnpm --filter @atproto/pds run build
 # Pack the PDS package as a tarball for the service stage
 RUN cd packages/pds && pnpm pack --pack-destination /tmp
