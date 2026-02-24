@@ -2,7 +2,7 @@
   "name": "pds",
   "private": true,
   "version": "0.0.0",
-  "description": "Service entrypoint for atproto personal data server",
+  "description": "Service entrypoint for protoimsg personal data server (fork of bluesky-social/pds)",
   "packageManager": "pnpm@8.15.9",
   "main": "index.js",
   "license": "MIT",
