@@ -1,5 +1,6 @@
 # PDS — protoimsg fork
 
+> [!IMPORTANT]
 > **This is an unofficial fork.** The upstream repository is [bluesky-social/pds](https://github.com/bluesky-social/pds). This fork is maintained by the [protoimsg](https://protoimsg.app) project and is not affiliated with or endorsed by Bluesky.
 
 ## What changed in this fork
