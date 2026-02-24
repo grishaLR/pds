@@ -68,3 +68,4 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             ATPROTO_BRANCH=main
+            CACHE_BUST=${{ github.run_id }}
