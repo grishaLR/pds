@@ -19,6 +19,9 @@ const main = async () => {
   pds.app.get("/tls-check", (req, res) => {
     checkHandleRoute(pds, req, res);
   });
+
+  // Metrics endpoint is registered in basic-routes.ts of the @atproto/pds fork.
+  // The /metrics route is already available via the PDS Express app.
   // Graceful shutdown (see also https://aws.amazon.com/blogs/containers/graceful-shutdowns-with-ecs/)
   process.on("SIGTERM", async () => {
     httpLogger.info("pds is stopping");

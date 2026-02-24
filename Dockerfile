@@ -1,5 +1,21 @@
-# NOTE there is an additional build stage below that should match
-FROM node:20.20-alpine3.23 as build
+# Stage 1: Build @atproto/pds from our fork
+FROM node:20.20-alpine3.23 AS atproto-build
+
+RUN corepack enable
+RUN apk add --no-cache git python3 make g++
+
+WORKDIR /atproto
+# Clone the fork — use ARG so CI can override the branch
+ARG ATPROTO_BRANCH=protoimsg/custom-pds
+RUN git clone --depth 1 --branch ${ATPROTO_BRANCH} https://github.com/grishaLR/atproto.git .
+RUN corepack prepare --activate
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @atproto/pds run build
+# Pack the PDS package as a tarball for the service stage
+RUN cd packages/pds && pnpm pack --pack-destination /tmp
+
+# Stage 2: Build goat + service
+FROM node:20.20-alpine3.23 AS build
 
 RUN corepack enable
 
@@ -13,13 +29,25 @@ RUN git clone https://github.com/bluesky-social/goat.git && cd goat && git check
 # Move files into the image and install
 WORKDIR /app
 COPY ./service ./
-RUN corepack prepare --activate
-RUN pnpm install --production --frozen-lockfile > /dev/null
 
-# Uses assets from build stage to reduce build size
+# Replace the npm version with our fork's tarball
+COPY --from=atproto-build /tmp/atproto-pds-*.tgz /tmp/
+RUN TARBALL=$(ls /tmp/atproto-pds-*.tgz | head -1) && \
+    cat package.json | sed "s|\"@atproto/pds\": \".*\"|\"@atproto/pds\": \"file:${TARBALL}\"|" > package.json.tmp && \
+    mv package.json.tmp package.json && \
+    rm -f pnpm-lock.yaml
+
+RUN corepack prepare --activate
+RUN pnpm install --production > /dev/null
+
+# Stage 3: Final image with Litestream
 FROM node:20.20-alpine3.23
 
-RUN apk add --update dumb-init
+RUN apk add --update dumb-init sqlite bash curl
+
+# Add Litestream for continuous SQLite backup to R2
+ADD https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-amd64.tar.gz /tmp/litestream.tar.gz
+RUN tar -xzf /tmp/litestream.tar.gz -C /usr/local/bin/ && rm /tmp/litestream.tar.gz
 
 # Avoid zombie processes, handle signal forwarding
 ENTRYPOINT ["dumb-init", "--"]
@@ -27,6 +55,9 @@ ENTRYPOINT ["dumb-init", "--"]
 WORKDIR /app
 COPY --from=build /app /app
 COPY --from=build /tmp/goat-build /usr/local/bin/goat
+COPY litestream.yml /etc/litestream.yml
+COPY actor-backup.sh /usr/local/bin/actor-backup.sh
+RUN chmod +x /usr/local/bin/actor-backup.sh
 
 EXPOSE 3000
 ENV PDS_PORT=3000
@@ -34,8 +65,11 @@ ENV NODE_ENV=production
 # potential perf issues w/ io_uring on this version of node
 ENV UV_USE_IO_URING=0
 
-CMD ["node", "--enable-source-maps", "index.js"]
+# Litestream wraps the PDS process — it replicates WAL changes continuously
+# and forwards signals to the child process for graceful shutdown.
+# If LITESTREAM_ACCESS_KEY_ID is not set, fall back to running PDS directly.
+CMD ["sh", "-c", "if [ -n \"$LITESTREAM_ACCESS_KEY_ID\" ]; then actor-backup.sh & exec litestream replicate -exec 'node --enable-source-maps index.js'; else exec node --enable-source-maps index.js; fi"]
 
-LABEL org.opencontainers.image.source=https://github.com/bluesky-social/pds
-LABEL org.opencontainers.image.description="AT Protocol PDS"
+LABEL org.opencontainers.image.source=https://github.com/grishaLR/pds
+LABEL org.opencontainers.image.description="protoimsg AT Protocol PDS"
 LABEL org.opencontainers.image.licenses=MIT

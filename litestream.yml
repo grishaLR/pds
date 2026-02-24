@@ -1,0 +1,30 @@
+dbs:
+  - path: /pds/account.sqlite
+    replicas:
+      - type: s3
+        endpoint: ${LITESTREAM_R2_ENDPOINT}
+        bucket: protoimsg-pds-backup
+        path: account.sqlite
+        access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+        secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+        sync-interval: 10s
+
+  - path: /pds/sequencer.sqlite
+    replicas:
+      - type: s3
+        endpoint: ${LITESTREAM_R2_ENDPOINT}
+        bucket: protoimsg-pds-backup
+        path: sequencer.sqlite
+        access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+        secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+        sync-interval: 10s
+
+  - path: /pds/did_cache.sqlite
+    replicas:
+      - type: s3
+        endpoint: ${LITESTREAM_R2_ENDPOINT}
+        bucket: protoimsg-pds-backup
+        path: did_cache.sqlite
+        access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+        secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+        sync-interval: 60s
