@@ -6,6 +6,12 @@ on:
       - protoimsg/custom-pds
     tags:
       - v*
+  workflow_dispatch:
+    inputs:
+      no_cache:
+        description: 'Build without Docker cache'
+        type: boolean
+        default: true
 env:
   REGISTRY: ghcr.io
   USERNAME: ${{ github.actor }}
@@ -57,6 +63,7 @@ jobs:
           tags: |
             ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          no-cache: ${{ github.event.inputs.no_cache == 'true' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
