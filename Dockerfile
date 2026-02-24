@@ -6,7 +6,9 @@ RUN apk add --no-cache git python3 make g++
 
 WORKDIR /atproto
 # Clone the fork — use ARG so CI can override the branch
+# CACHE_BUST arg invalidates the clone layer when the upstream repo changes
 ARG ATPROTO_BRANCH=main
+ARG CACHE_BUST=1
 RUN git clone --depth 1 --branch ${ATPROTO_BRANCH} https://github.com/grishaLR/atproto.git .
 RUN corepack prepare --activate
 RUN pnpm install --no-frozen-lockfile
