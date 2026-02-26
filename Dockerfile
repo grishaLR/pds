@@ -45,7 +45,7 @@ RUN pnpm install --production > /dev/null
 # Stage 3: Final image with Litestream
 FROM node:20.20-alpine3.23
 
-RUN apk add --update dumb-init sqlite bash curl
+RUN apk add --update dumb-init sqlite bash curl rclone
 
 # Add Litestream for continuous SQLite backup to R2
 ADD https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-amd64.tar.gz /tmp/litestream.tar.gz
@@ -57,9 +57,10 @@ ENTRYPOINT ["dumb-init", "--"]
 WORKDIR /app
 COPY --from=build /app /app
 COPY --from=build /tmp/goat-build /usr/local/bin/goat
-COPY litestream.yml /etc/litestream.yml
+COPY litestream-base.yml /etc/litestream-base.yml
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY actor-backup.sh /usr/local/bin/actor-backup.sh
-RUN chmod +x /usr/local/bin/actor-backup.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/actor-backup.sh
 
 EXPOSE 3000
 ENV PDS_PORT=3000
@@ -70,7 +71,7 @@ ENV UV_USE_IO_URING=0
 # Litestream wraps the PDS process — it replicates WAL changes continuously
 # and forwards signals to the child process for graceful shutdown.
 # If LITESTREAM_ACCESS_KEY_ID is not set, fall back to running PDS directly.
-CMD ["sh", "-c", "if [ -n \"$LITESTREAM_ACCESS_KEY_ID\" ]; then actor-backup.sh & exec litestream replicate -exec 'node --enable-source-maps index.js'; else exec node --enable-source-maps index.js; fi"]
+CMD ["entrypoint.sh"]
 
 LABEL org.opencontainers.image.source=https://github.com/grishaLR/pds
 LABEL org.opencontainers.image.description="protoimsg AT Protocol PDS"
