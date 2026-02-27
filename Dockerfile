@@ -16,6 +16,7 @@ RUN pnpm --filter @atproto/pds... run build
 # Pack the PDS package and its forked dependencies as tarballs for the service stage
 RUN cd packages/pds && pnpm pack --pack-destination /tmp
 RUN cd packages/oauth/oauth-provider && pnpm pack --pack-destination /tmp
+RUN cd packages/oauth/oauth-provider-ui && pnpm pack --pack-destination /tmp
 
 # Stage 2: Build goat + service
 FROM node:20.20-alpine3.23 AS build
@@ -33,17 +34,20 @@ RUN git clone https://github.com/bluesky-social/goat.git && cd goat && git check
 WORKDIR /app
 COPY ./service ./
 
-# Replace npm versions with our fork's tarballs (PDS + oauth-provider)
+# Replace npm versions with our fork's tarballs (PDS + oauth-provider + oauth-provider-ui)
 COPY --from=atproto-build /tmp/atproto-pds-*.tgz /tmp/
 COPY --from=atproto-build /tmp/atproto-oauth-provider-*.tgz /tmp/
+COPY --from=atproto-build /tmp/atproto-oauth-provider-ui-*.tgz /tmp/
 RUN PDS_TARBALL=$(ls /tmp/atproto-pds-*.tgz | head -1) && \
     OAUTH_TARBALL=$(ls /tmp/atproto-oauth-provider-*.tgz | head -1) && \
+    UI_TARBALL=$(ls /tmp/atproto-oauth-provider-ui-*.tgz | head -1) && \
     node -e " \
       const pkg = require('./package.json'); \
       pkg.dependencies['@atproto/pds'] = 'file:${PDS_TARBALL}'; \
       pkg.pnpm = pkg.pnpm || {}; \
       pkg.pnpm.overrides = pkg.pnpm.overrides || {}; \
       pkg.pnpm.overrides['@atproto/oauth-provider'] = 'file:${OAUTH_TARBALL}'; \
+      pkg.pnpm.overrides['@atproto/oauth-provider-ui'] = 'file:${UI_TARBALL}'; \
       require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n'); \
     " && \
     rm -f pnpm-lock.yaml
