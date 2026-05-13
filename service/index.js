@@ -6,6 +6,10 @@ const {
   readEnv,
   httpLogger,
 } = require("@atproto/pds");
+
+// Unblock handles reserved by upstream that we want to allow on this PDS
+const { reservedSubdomains } = require("@atproto/pds/dist/handle/reserved");
+delete reservedSubdomains["games"];
 const pkg = require("@atproto/pds/package.json");
 
 const main = async () => {
